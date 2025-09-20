@@ -1,20 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { fetchYouTubeVideos, YouTubeVideo } from '@/lib/youtube';
 
-interface Video {
-  id: string;
-  title: string;
-  thumbnail: string;
-  duration: string;
-  category: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  youtubeId: string;
-}
-
-// Mock data - replace with actual YouTube API data
-const mockVideos: Video[] = [
+// Fallback mock data in case API is not configured
+const mockVideos: YouTubeVideo[] = [
   {
     id: '1',
     title: 'JavaScript Array Methods Explained in 60 Seconds',
@@ -22,7 +13,10 @@ const mockVideos: Video[] = [
     duration: '1:23',
     category: 'JavaScript',
     difficulty: 'Beginner',
-    youtubeId: 'dQw4w9WgXcQ'
+    youtubeId: 'dQw4w9WgXcQ',
+    publishedAt: '2024-01-01T00:00:00Z',
+    description: 'Learn JavaScript array methods quickly',
+    viewCount: '1.2K'
   },
   {
     id: '2',
@@ -31,43 +25,10 @@ const mockVideos: Video[] = [
     duration: '2:15',
     category: 'React',
     difficulty: 'Intermediate',
-    youtubeId: 'dQw4w9WgXcQ'
-  },
-  {
-    id: '3',
-    title: 'Python List Comprehensions - One Liner Magic',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    duration: '1:45',
-    category: 'Python',
-    difficulty: 'Beginner',
-    youtubeId: 'dQw4w9WgXcQ'
-  },
-  {
-    id: '4',
-    title: 'CSS Grid vs Flexbox - When to Use What?',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    duration: '2:30',
-    category: 'CSS',
-    difficulty: 'Intermediate',
-    youtubeId: 'dQw4w9WgXcQ'
-  },
-  {
-    id: '5',
-    title: 'TypeScript Generics Explained Simply',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    duration: '3:12',
-    category: 'TypeScript',
-    difficulty: 'Advanced',
-    youtubeId: 'dQw4w9WgXcQ'
-  },
-  {
-    id: '6',
-    title: 'Node.js Async/Await Patterns',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    duration: '2:45',
-    category: 'Node.js',
-    difficulty: 'Advanced',
-    youtubeId: 'dQw4w9WgXcQ'
+    youtubeId: 'dQw4w9WgXcQ',
+    publishedAt: '2024-01-02T00:00:00Z',
+    description: 'Master React hooks in minutes',
+    viewCount: '2.5K'
   }
 ];
 
@@ -77,9 +38,38 @@ const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 export default function VideoSection() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<YouTubeVideo | null>(null);
+  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredVideos = mockVideos.filter(video => {
+  // Fetch videos from YouTube API
+  useEffect(() => {
+    const loadVideos = async () => {
+      try {
+        setLoading(true);
+        const youtubeVideos = await fetchYouTubeVideos(20); // Fetch last 20 videos
+        
+        if (youtubeVideos.length > 0) {
+          setVideos(youtubeVideos);
+        } else {
+          // Fallback to mock data if API fails
+          setVideos(mockVideos);
+          setError('Using sample videos. Please configure YouTube API for real content.');
+        }
+      } catch (err) {
+        console.error('Error loading videos:', err);
+        setVideos(mockVideos);
+        setError('Failed to load videos. Using sample content.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadVideos();
+  }, []);
+
+  const filteredVideos = videos.filter(video => {
     const categoryMatch = selectedCategory === 'All' || video.category === selectedCategory;
     const difficultyMatch = selectedDifficulty === 'All' || video.difficulty === selectedDifficulty;
     return categoryMatch && difficultyMatch;
@@ -140,9 +130,30 @@ export default function VideoSection() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-8 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="text-yellow-200">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+            <span className="ml-4 text-gray-300">Loading your videos...</span>
+          </div>
+        )}
+
         {/* Video Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredVideos.map(video => (
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredVideos.map(video => (
             <div
               key={video.id}
               className="bg-gray-800 rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300 cursor-pointer"
@@ -186,7 +197,8 @@ export default function VideoSection() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Video Modal */}
         {selectedVideo && (
