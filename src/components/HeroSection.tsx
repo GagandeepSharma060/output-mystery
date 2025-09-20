@@ -1,13 +1,22 @@
+import { brand } from '@/lib/brand';
+
 export default function HeroSection() {
   return (
     <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-6">
-            Output Mystery
-          </h1>
+          {/* Logo/Brand */}
+          <div className="flex items-center justify-center mb-6">
+            {brand.logo.showIcon && (
+              <span className="text-6xl mr-4">{brand.logo.icon}</span>
+            )}
+            <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+              {brand.logo.text}
+            </h1>
+          </div>
+          
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Solve coding mysteries. Master programming skills. Watch, learn, and code with interactive challenges.
+            {brand.info.tagline}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a 
@@ -32,18 +41,15 @@ export default function HeroSection() {
         
         {/* Stats */}
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-cyan-400">100+</div>
-            <div className="text-gray-400">Coding Shorts</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-cyan-400">Interactive</div>
-            <div className="text-gray-400">IDE Experience</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-cyan-400">Free</div>
-            <div className="text-gray-400">Learning Platform</div>
-          </div>
+          {brand.stats.map((stat, index) => (
+            <div key={index} className="text-center group">
+              <div className="text-3xl font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">
+                {stat.value}
+              </div>
+              <div className="text-gray-400 font-medium">{stat.label}</div>
+              <div className="text-gray-500 text-sm mt-1">{stat.description}</div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

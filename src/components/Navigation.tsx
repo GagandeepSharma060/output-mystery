@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { brand } from '@/lib/brand';
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,7 +13,10 @@ export default function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
-              <span className="text-2xl font-bold text-cyan-400">Output Mystery</span>
+              {brand.logo.showIcon && (
+                <span className="text-2xl mr-2">{brand.logo.icon}</span>
+              )}
+              <span className="text-2xl font-bold text-cyan-400">{brand.logo.text}</span>
             </Link>
           </div>
           

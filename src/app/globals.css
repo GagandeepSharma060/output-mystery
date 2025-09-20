@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Brand CSS Variables */
+:root {
+  --brand-primary: #06B6D4;
+  --brand-primary-dark: #0891B2;
+  --brand-secondary: #3B82F6;
+  --brand-secondary-dark: #2563EB;
+  --brand-accent: #F59E0B;
+  --brand-success: #10B981;
+  --brand-warning: #F59E0B;
+  --brand-error: #EF4444;
+  --brand-background: #111827;
+  --brand-surface: #1F2937;
+  --brand-surface-light: #374151;
+  --brand-text-primary: #FFFFFF;
+  --brand-text-secondary: #D1D5DB;
+  --brand-text-muted: #9CA3AF;
+}
+
 /* Custom styles for better appearance */
 * {
   box-sizing: border-box;
