@@ -1,0 +1,19 @@
+{
+  "name": "output-mystery-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Output Mystery code execution",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
+
