@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
           new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
             let stdout = '';
             let stderr = '';
+            // eslint-disable-next-line prefer-const
             let timeoutId: NodeJS.Timeout;
 
             const pythonProcess = spawn('python3', ['-u', '-c', code]);
