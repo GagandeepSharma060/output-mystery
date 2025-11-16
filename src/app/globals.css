@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Brand CSS Variables */
+:root {
+  --brand-primary: #06B6D4;
+  --brand-primary-dark: #0891B2;
+  --brand-secondary: #3B82F6;
+  --brand-secondary-dark: #2563EB;
+  --brand-accent: #F59E0B;
+  --brand-success: #10B981;
+  --brand-warning: #F59E0B;
+  --brand-error: #EF4444;
+  --brand-background: #111827;
+  --brand-surface: #1F2937;
+  --brand-surface-light: #374151;
+  --brand-text-primary: #FFFFFF;
+  --brand-text-secondary: #D1D5DB;
+  --brand-text-muted: #9CA3AF;
+}
+
+/* Custom styles for better appearance */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: #111827; /* gray-900 */
+  color: #ffffff;
+}
+
+body {
+  color: #ffffff;
+  background: #111827;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* Ensure full height coverage */
+#__next {
+  min-height: 100vh;
+}
+
+/* Fix for blue hyperlink appearance */
+a:not([class]) {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
