@@ -251,34 +251,62 @@ const executeJavaScript = (code: string): Promise<string> => {
   });
 };
 
+// Cache Pyodide instance
+let pyodideInstance: any = null;
+let pyodideLoading: Promise<any> | null = null;
+
 // Execute Python code using Pyodide (browser-based)
 const executePython = async (code: string): Promise<string> => {
   try {
-    // Load Pyodide from CDN (works better with Next.js)
-    // Check if Pyodide is already loaded
+    // Check if we're in browser
     if (typeof window === 'undefined') {
       return 'Error: Python execution is only available in the browser.';
     }
 
-    // @ts-ignore - Pyodide is loaded from CDN
-    if (!window.loadPyodide) {
-      // Load Pyodide script if not already loaded
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load Pyodide'));
-        document.head.appendChild(script);
-      });
+    // Load Pyodide if not already loaded
+    if (!pyodideInstance && !pyodideLoading) {
+      pyodideLoading = (async () => {
+        // Load Pyodide script from CDN
+        if (!(window as any).loadPyodide) {
+          await new Promise<void>((resolve, reject) => {
+            // Check if script already exists
+            const existingScript = document.querySelector('script[src*="pyodide"]');
+            if (existingScript) {
+              // Wait for it to load
+              existingScript.addEventListener('load', () => resolve());
+              existingScript.addEventListener('error', () => reject(new Error('Failed to load Pyodide')));
+              if ((window as any).loadPyodide) {
+                resolve();
+              }
+              return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
+            script.onload = () => {
+              // Wait a bit for Pyodide to initialize
+              setTimeout(resolve, 100);
+            };
+            script.onerror = () => reject(new Error('Failed to load Pyodide script'));
+            document.head.appendChild(script);
+          });
+        }
+
+        // Now load Pyodide instance
+        const { loadPyodide } = (window as any);
+        return await loadPyodide({
+          indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/',
+        });
+      })();
     }
 
-    // @ts-ignore - Pyodide is loaded from CDN
-    const { loadPyodide } = window;
+    // Wait for Pyodide to load
+    if (!pyodideInstance) {
+      pyodideInstance = await pyodideLoading;
+      pyodideLoading = null;
+    }
     
-    // Load Pyodide (first time only, will be cached)
-    const pyodide = await loadPyodide({
-      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/',
-    });
+    const pyodide = pyodideInstance;
 
     // Set up stdout capture
     pyodide.runPython(`
