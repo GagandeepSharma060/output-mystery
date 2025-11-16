@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Navigation from './Navigation';
 
+// Extend Window interface for Pyodide
+declare global {
+  interface Window {
+    loadPyodide?: (config: { indexURL: string }) => Promise<any>;
+  }
+}
+
 // Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -247,8 +254,26 @@ const executeJavaScript = (code: string): Promise<string> => {
 // Execute Python code using Pyodide (browser-based)
 const executePython = async (code: string): Promise<string> => {
   try {
-    // Dynamically import Pyodide
-    const { loadPyodide } = await import('pyodide');
+    // Load Pyodide from CDN (works better with Next.js)
+    // Check if Pyodide is already loaded
+    if (typeof window === 'undefined') {
+      return 'Error: Python execution is only available in the browser.';
+    }
+
+    // @ts-ignore - Pyodide is loaded from CDN
+    if (!window.loadPyodide) {
+      // Load Pyodide script if not already loaded
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Pyodide'));
+        document.head.appendChild(script);
+      });
+    }
+
+    // @ts-ignore - Pyodide is loaded from CDN
+    const { loadPyodide } = window;
     
     // Load Pyodide (first time only, will be cached)
     const pyodide = await loadPyodide({
