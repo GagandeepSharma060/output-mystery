@@ -8,7 +8,17 @@ export default function HeroSection() {
           {/* Logo/Brand */}
           <div className="flex items-center justify-center mb-6">
             {brand.logo.showIcon && (
-              <span className="text-6xl mr-4">{brand.logo.icon}</span>
+              <div className="mr-4">
+                {brand.logo.useImage && brand.logo.image ? (
+                  <img 
+                    src={brand.logo.image} 
+                    alt={brand.logo.text}
+                    className="w-16 h-16 object-contain"
+                  />
+                ) : (
+                  <span className="text-6xl">{brand.logo.icon}</span>
+                )}
+              </div>
             )}
             <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
               {brand.logo.text}

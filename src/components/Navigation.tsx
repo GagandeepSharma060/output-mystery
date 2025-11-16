@@ -14,7 +14,17 @@ export default function Navigation() {
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0 flex items-center">
               {brand.logo.showIcon && (
-                <span className="text-2xl mr-2">{brand.logo.icon}</span>
+                <div className="mr-2">
+                  {brand.logo.useImage && brand.logo.image ? (
+                    <img 
+                      src={brand.logo.image} 
+                      alt={brand.logo.text}
+                      className="w-8 h-8 object-contain"
+                    />
+                  ) : (
+                    <span className="text-2xl">{brand.logo.icon}</span>
+                  )}
+                </div>
               )}
               <span className="text-2xl font-bold text-cyan-400">{brand.logo.text}</span>
             </Link>

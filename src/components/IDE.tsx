@@ -1,7 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Navigation from './Navigation';
+
+// Dynamically import Monaco Editor to avoid SSR issues
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-gray-400">Loading editor...</div>
+});
 
 interface CodeTemplate {
   id: string;
@@ -46,37 +53,49 @@ console.log('All positive:', allPositive);`,
   },
   {
     id: '2',
-    name: 'React Component',
-    language: 'javascript',
-    code: `import React, { useState, useEffect } from 'react';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-
-  useEffect(() => {
-    let interval;
-    if (isRunning) {
-      interval = setInterval(() => {
-        setCount(count => count + 1);
-      }, 1000);
+    name: 'HTML/CSS Example',
+    language: 'html',
+    code: `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
-    return () => clearInterval(interval);
-  }, [isRunning]);
-
-  return (
-    <div className="counter">
-      <h2>Count: {count}</h2>
-      <button onClick={() => setIsRunning(!isRunning)}>
-        {isRunning ? 'Pause' : 'Start'}
-      </button>
-      <button onClick={() => setCount(0)}>Reset</button>
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hello from Output Mystery!</h1>
+    <div class="card">
+      <h2>Welcome to the IDE</h2>
+      <p>This is a live HTML/CSS preview. Edit the code and see changes instantly!</p>
     </div>
-  );
-}
-
-export default Counter;`,
-    description: 'A simple React counter component with useState and useEffect hooks.'
+  </div>
+</body>
+</html>`,
+    description: 'Create beautiful HTML pages with CSS styling. See live preview as you code.'
   },
   {
     id: '3',
@@ -118,17 +137,18 @@ print('Word lengths:', word_lengths)`,
   grid-template-rows: repeat(3, 100px);
   gap: 10px;
   padding: 20px;
-  background-color: #f0f0f0;
+  background-color: #1f2937;
 }
 
 .grid-item {
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: bold;
+  border-radius: 5px;
 }
 
 /* Grid area names */
@@ -160,63 +180,206 @@ print('Word lengths:', word_lengths)`,
   }
 ];
 
+// Map Monaco language to template language
+const getMonacoLanguage = (lang: string): string => {
+  const langMap: { [key: string]: string } = {
+    'javascript': 'javascript',
+    'python': 'python',
+    'html': 'html',
+    'css': 'css',
+  };
+  return langMap[lang] || 'javascript';
+};
+
+// Execute JavaScript code and capture console.log
+const executeJavaScript = (code: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const logs: string[] = [];
+    const originalLog = console.log;
+    
+    // Override console.log to capture output
+    console.log = (...args: any[]) => {
+      const output = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      logs.push(output);
+      originalLog(...args);
+    };
+
+    try {
+      // Create a safe execution context
+      const wrappedCode = `
+        (function() {
+          ${code}
+        })();
+      `;
+      
+      // Execute with timeout
+      const timeoutId = setTimeout(() => {
+        console.log = originalLog;
+        resolve('Error: Execution timeout (5 seconds)');
+      }, 5000);
+
+      // Use Function constructor for safer execution
+      const func = new Function(wrappedCode);
+      func();
+      
+      clearTimeout(timeoutId);
+      console.log = originalLog;
+      
+      const output = logs.length > 0 ? logs.join('\n') : 'Code executed successfully (no output)';
+      resolve(output);
+    } catch (error: any) {
+      console.log = originalLog;
+      resolve(`Error: ${error.message}`);
+    }
+  });
+};
+
+// Execute Python code via API
+const executePython = async (code: string): Promise<string> => {
+  try {
+    // Use backend server URL (fallback to Next.js API route)
+    const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '/api/execute';
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        language: 'python',
+        code: code,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to execute code');
+    }
+
+    const data = await response.json();
+    return data.output || data.error || 'No output';
+  } catch (error: any) {
+    return `Error: ${error.message}. Make sure the backend server is running at ${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}`;
+  }
+};
+
 export default function IDE() {
   const [selectedTemplate, setSelectedTemplate] = useState<CodeTemplate>(codeTemplates[0]);
   const [code, setCode] = useState(selectedTemplate.code);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const previewRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     setCode(selectedTemplate.code);
     setOutput('');
+    setShowPreview(false);
   }, [selectedTemplate]);
+
+  // Update preview for HTML/CSS
+  useEffect(() => {
+    if ((selectedTemplate.language === 'html' || selectedTemplate.language === 'css') && showPreview && previewRef.current) {
+      updatePreview();
+    }
+  }, [code, showPreview, selectedTemplate.language]);
+
+  const updatePreview = () => {
+    if (!previewRef.current) return;
+    
+    const iframe = previewRef.current;
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    
+    if (iframeDoc) {
+      if (selectedTemplate.language === 'html') {
+        iframeDoc.open();
+        iframeDoc.write(code);
+        iframeDoc.close();
+      } else if (selectedTemplate.language === 'css') {
+        // For CSS, create a basic HTML structure
+        iframeDoc.open();
+        iframeDoc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>${code}</style>
+          </head>
+          <body>
+            <div class="grid-container">
+              <div class="grid-item">1</div>
+              <div class="grid-item">2</div>
+              <div class="grid-item">3</div>
+              <div class="grid-item">4</div>
+              <div class="grid-item">5</div>
+              <div class="grid-item">6</div>
+              <div class="grid-item">7</div>
+              <div class="grid-item">8</div>
+              <div class="grid-item">9</div>
+            </div>
+          </body>
+          </html>
+        `);
+        iframeDoc.close();
+      }
+    }
+  };
 
   const runCode = async () => {
     setIsRunning(true);
     setOutput('Running code...\n');
     
-    // Simulate code execution
-    setTimeout(() => {
+    try {
       let result = '';
       
       if (selectedTemplate.language === 'javascript') {
-        // Simple JavaScript execution simulation
-        try {
-          // This is a simplified version - in a real app, you'd use a proper JS runtime
-          result = 'Code executed successfully!\n';
-          result += 'Check the browser console for output.\n';
-          result += 'Note: This is a demo. Full execution requires a proper runtime.';
-        } catch (error) {
-          result = `Error: ${error}`;
-        }
+        result = await executeJavaScript(code);
       } else if (selectedTemplate.language === 'python') {
-        result = 'Python code would be executed here.\n';
-        result += 'In a real implementation, this would connect to a Python runtime.\n';
-        result += 'Example output:\n';
-        result += 'Squares: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]\n';
-        result += 'Evens: [2, 4, 6, 8, 10]\n';
-        result += 'Even numbers > 5: [6, 8, 10]\n';
-        result += 'Flattened: [1, 2, 3, 4, 5, 6, 7, 8, 9]\n';
-        result += 'Word lengths: {\'hello\': 5, \'world\': 5, \'python\': 6}';
-      } else if (selectedTemplate.language === 'css') {
-        result = 'CSS styles applied!\n';
-        result += 'The grid layout should now be visible in the preview area.\n';
-        result += 'Check the browser developer tools to see the computed styles.';
+        result = await executePython(code);
+      } else if (selectedTemplate.language === 'html' || selectedTemplate.language === 'css') {
+        setShowPreview(true);
+        result = 'Preview updated! Check the preview panel on the right.';
+        updatePreview();
+      } else {
+        result = 'Language not supported for execution.';
       }
       
       setOutput(result);
+    } catch (error: any) {
+      setOutput(`Error: ${error.message}`);
+    } finally {
       setIsRunning(false);
-    }, 1500);
+    }
   };
 
   const clearOutput = () => {
     setOutput('');
+    setShowPreview(false);
   };
 
   const resetCode = () => {
     setCode(selectedTemplate.code);
     setOutput('');
+    setShowPreview(false);
   };
+
+  const handleEditorChange = (value: string | undefined) => {
+    setCode(value || '');
+    // Auto-update preview for HTML/CSS
+    if ((selectedTemplate.language === 'html' || selectedTemplate.language === 'css') && showPreview) {
+      setTimeout(updatePreview, 300); // Debounce
+    }
+  };
+
+  const needsPreview = selectedTemplate.language === 'html' || selectedTemplate.language === 'css';
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -276,6 +439,21 @@ export default function IDE() {
               >
                 Clear Output
               </button>
+              {needsPreview && (
+                <button
+                  onClick={() => {
+                    setShowPreview(!showPreview);
+                    if (!showPreview) updatePreview();
+                  }}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    showPreview
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {showPreview ? 'Hide Preview' : 'Show Preview'}
+                </button>
+              )}
               <button
                 onClick={runCode}
                 disabled={isRunning}
@@ -300,34 +478,63 @@ export default function IDE() {
             </div>
           </div>
 
-          {/* Code Editor and Output */}
+          {/* Code Editor and Output/Preview */}
           <div className="flex-1 flex">
             {/* Code Editor */}
             <div className="flex-1 flex flex-col">
               <div className="bg-gray-800 px-4 py-2 border-b border-gray-700">
                 <span className="text-sm text-gray-400">Code Editor</span>
               </div>
-              <div className="flex-1 p-4">
-                <textarea
+              <div className="flex-1">
+                <MonacoEditor
+                  height="100%"
+                  language={getMonacoLanguage(selectedTemplate.language)}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-full bg-gray-900 text-gray-100 p-4 rounded-lg border border-gray-700 font-mono text-sm resize-none focus:outline-none focus:border-cyan-500"
-                  placeholder="Write your code here..."
-                  spellCheck={false}
+                  onChange={handleEditorChange}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    wordWrap: 'on',
+                    formatOnPaste: true,
+                    formatOnType: true,
+                  }}
                 />
               </div>
             </div>
 
-            {/* Output Panel */}
+            {/* Output/Preview Panel */}
             <div className="w-1/2 flex flex-col border-l border-gray-700">
-              <div className="bg-gray-800 px-4 py-2 border-b border-gray-700">
-                <span className="text-sm text-gray-400">Output</span>
-              </div>
-              <div className="flex-1 p-4">
-                <pre className="w-full h-full bg-gray-900 text-gray-100 p-4 rounded-lg border border-gray-700 font-mono text-sm overflow-auto whitespace-pre-wrap">
-                  {output || 'Click "Run Code" to see the output here...'}
-                </pre>
-              </div>
+              {needsPreview && showPreview ? (
+                <>
+                  <div className="bg-gray-800 px-4 py-2 border-b border-gray-700">
+                    <span className="text-sm text-gray-400">Live Preview</span>
+                  </div>
+                  <div className="flex-1 bg-white">
+                    <iframe
+                      ref={previewRef}
+                      className="w-full h-full border-0"
+                      sandbox="allow-same-origin allow-scripts"
+                      title="Code Preview"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-gray-800 px-4 py-2 border-b border-gray-700">
+                    <span className="text-sm text-gray-400">Output</span>
+                  </div>
+                  <div className="flex-1 p-4">
+                    <pre className="w-full h-full bg-gray-900 text-gray-100 p-4 rounded-lg border border-gray-700 font-mono text-sm overflow-auto whitespace-pre-wrap">
+                      {output || 'Click "Run Code" to see the output here...'}
+                    </pre>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

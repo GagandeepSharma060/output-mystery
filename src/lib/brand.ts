@@ -42,8 +42,11 @@ export const brand = {
   // Logo configuration
   logo: {
     text: 'Output Mystery',
-    icon: '🔍', // You can replace this with an actual logo
+    icon: '{?}', // Your actual logo symbol
     showIcon: true,
+    // Use SVG logo
+    image: '/logo.png', // Your custom SVG logo
+    useImage: true, // Use the SVG logo
   },
   
   // Social links
@@ -51,7 +54,7 @@ export const brand = {
     youtube: 'https://www.youtube.com/@OutputMystery',
     github: 'https://github.com/GagandeepSharma060/output-mystery',
     twitter: '', // Add if you have one
-    linkedin: '', // Add if you have one
+    linkedin: 'https://www.linkedin.com/in/gagandeep-sharma2488-bb4908214/', // Add if you have one
   },
   
   // Feature highlights
